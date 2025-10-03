@@ -1,0 +1,178 @@
+import { useState } from 'react';
+import { Plus, Minus, Trash2, CreditCard, Banknote, Receipt } from 'lucide-react';
+import { mockProducts } from '../data/mockData';
+import Button from '../components/UI/Button';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export default function POS() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredProducts = mockProducts.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const addToCart = (product: typeof mockProducts[0]) => {
+    const existingItem = cart.find((item) => item.id === product.id);
+    if (existingItem) {
+      setCart(
+        cart.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      );
+    } else {
+      setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1 }]);
+    }
+  };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCart(
+      cart
+        .map((item) =>
+          item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(cart.filter((item) => item.id !== id));
+  };
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const tax = subtotal * 0.1;
+  const total = subtotal + tax;
+
+  return (
+    <div className="flex gap-6 h-[calc(100vh-140px)]">
+      <div className="flex-1 flex flex-col">
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search products by name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredProducts.map((product) => (
+              <button
+                key={product.id}
+                onClick={() => addToCart(product)}
+                className="bg-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all text-left"
+              >
+                <div className="aspect-square bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-4xl">📦</span>
+                </div>
+                <h4 className="font-semibold text-slate-900 mb-1 line-clamp-2">{product.name}</h4>
+                <p className="text-xs text-slate-500 mb-2">{product.sku}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</p>
+                  <span className="text-xs text-slate-600">Stock: {product.stock}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="w-96 bg-white rounded-xl border border-slate-200 shadow-lg flex flex-col">
+        <div className="p-6 border-b border-slate-200">
+          <h3 className="text-xl font-bold text-slate-900">Current Sale</h3>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {cart.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+              <Receipt className="w-16 h-16 mb-4" />
+              <p className="text-center">No items in cart<br />Start scanning or selecting products</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {cart.map((item) => (
+                <div key={item.id} className="flex items-start gap-3 pb-4 border-b border-slate-100">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900">{item.name}</h4>
+                    <p className="text-sm text-slate-600">${item.price.toFixed(2)} each</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-300 hover:bg-slate-100 transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-300 hover:bg-slate-100 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors ml-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-slate-200 space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Subtotal</span>
+              <span className="font-semibold text-slate-900">${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Tax (10%)</span>
+              <span className="font-semibold text-slate-900">${tax.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xl pt-2 border-t border-slate-200">
+              <span className="font-bold text-slate-900">Total</span>
+              <span className="font-bold text-blue-600">${total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" disabled={cart.length === 0} className="flex items-center justify-center gap-2">
+              <Banknote className="w-5 h-5" />
+              Cash
+            </Button>
+            <Button disabled={cart.length === 0} className="flex items-center justify-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Card
+            </Button>
+          </div>
+
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => setCart([])}
+            disabled={cart.length === 0}
+          >
+            Clear Cart
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
