@@ -1,10 +1,61 @@
+import { useEffect, useState } from 'react';
 import { Download, TrendingUp, DollarSign, ShoppingBag, Users as UsersIcon } from 'lucide-react';
-import { chartData, mockTransactions } from '../data/mockData';
+import { supabase } from '../lib/supabase';
 import Button from '../components/UI/Button';
 
 export default function Reports() {
-  const totalRevenue = mockTransactions.reduce((sum, t) => sum + t.total, 0);
-  const avgOrderValue = totalRevenue / mockTransactions.length;
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    avgOrderValue: 0,
+    totalCustomers: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReportsData();
+  }, []);
+
+  const fetchReportsData = async () => {
+    try {
+      // Fetch transactions
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('total_amount');
+
+      // Fetch orders
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('total_amount, customer_email');
+
+      const totalRevenue = transactions?.reduce((sum, t) => sum + parseFloat(t.total_amount), 0) || 0;
+      const totalOrders = transactions?.length || 0;
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      const uniqueCustomers = new Set(orders?.map(o => o.customer_email)).size || 0;
+
+      setStats({
+        totalRevenue,
+        totalOrders,
+        avgOrderValue,
+        totalCustomers: uniqueCustomers,
+      });
+    } catch (error) {
+      console.error('Error fetching reports data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-slate-600">Loading reports...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -33,7 +84,7 @@ export default function Reports() {
             <DollarSign className="w-8 h-8 opacity-80" />
             <span className="text-sm font-medium opacity-90">Revenue</span>
           </div>
-          <p className="text-3xl font-bold">${totalRevenue.toFixed(2)}</p>
+          <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
           <div className="flex items-center gap-1 mt-2 text-sm opacity-90">
             <TrendingUp className="w-4 h-4" />
             <span>+12.5% from last period</span>
@@ -45,7 +96,7 @@ export default function Reports() {
             <ShoppingBag className="w-8 h-8 opacity-80" />
             <span className="text-sm font-medium opacity-90">Orders</span>
           </div>
-          <p className="text-3xl font-bold">{mockTransactions.length}</p>
+          <p className="text-3xl font-bold">{stats.totalOrders}</p>
           <div className="flex items-center gap-1 mt-2 text-sm opacity-90">
             <TrendingUp className="w-4 h-4" />
             <span>+8.2% from last period</span>
@@ -57,7 +108,7 @@ export default function Reports() {
             <DollarSign className="w-8 h-8 opacity-80" />
             <span className="text-sm font-medium opacity-90">Avg Order</span>
           </div>
-          <p className="text-3xl font-bold">${avgOrderValue.toFixed(2)}</p>
+          <p className="text-3xl font-bold">${stats.avgOrderValue.toFixed(2)}</p>
           <div className="flex items-center gap-1 mt-2 text-sm opacity-90">
             <TrendingUp className="w-4 h-4" />
             <span>+5.1% from last period</span>
@@ -69,7 +120,7 @@ export default function Reports() {
             <UsersIcon className="w-8 h-8 opacity-80" />
             <span className="text-sm font-medium opacity-90">Customers</span>
           </div>
-          <p className="text-3xl font-bold">1,234</p>
+          <p className="text-3xl font-bold">{stats.totalCustomers}</p>
           <div className="flex items-center gap-1 mt-2 text-sm opacity-90">
             <TrendingUp className="w-4 h-4" />
             <span>+15.3% from last period</span>
@@ -87,24 +138,8 @@ export default function Reports() {
               <option>Monthly</option>
             </select>
           </div>
-          <div className="h-80 flex items-end justify-between gap-3">
-            {chartData.sales.map((value, index) => {
-              const maxValue = Math.max(...chartData.sales);
-              const height = (value / maxValue) * 100;
-              return (
-                <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                  <div
-                    className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg relative group cursor-pointer hover:from-blue-600 hover:to-blue-500 transition-all"
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      ${value.toLocaleString()}
-                    </div>
-                  </div>
-                  <span className="text-xs font-medium text-slate-600">{chartData.labels[index]}</span>
-                </div>
-              );
-            })}
+          <div className="h-80 flex items-center justify-center">
+            <p className="text-slate-500">Sales trend chart will be implemented with real data</p>
           </div>
         </div>
 
@@ -117,24 +152,8 @@ export default function Reports() {
               <option>Monthly</option>
             </select>
           </div>
-          <div className="h-80 flex items-end justify-between gap-3">
-            {chartData.orders.map((value, index) => {
-              const maxValue = Math.max(...chartData.orders);
-              const height = (value / maxValue) * 100;
-              return (
-                <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                  <div
-                    className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t-lg relative group cursor-pointer hover:from-green-600 hover:to-green-500 transition-all"
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {value} orders
-                    </div>
-                  </div>
-                  <span className="text-xs font-medium text-slate-600">{chartData.labels[index]}</span>
-                </div>
-              );
-            })}
+          <div className="h-80 flex items-center justify-center">
+            <p className="text-slate-500">Order volume chart will be implemented with real data</p>
           </div>
         </div>
       </div>
@@ -142,24 +161,8 @@ export default function Reports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 mb-4">Top Products</h3>
-          <div className="space-y-4">
-            {[
-              { name: 'Wireless Headphones', sales: 156, revenue: 12468.44 },
-              { name: 'Smart Watch', sales: 89, revenue: 17799.11 },
-              { name: 'Coffee Maker', sales: 67, revenue: 6029.33 },
-              { name: 'Yoga Mat', sales: 134, revenue: 4018.66 },
-              { name: 'Desk Lamp', sales: 78, revenue: 3119.22 },
-            ].map((product, index) => (
-              <div key={index} className="flex items-center justify-between pb-4 border-b border-slate-100 last:border-0">
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-900">{product.name}</p>
-                  <p className="text-sm text-slate-600">{product.sales} units sold</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-slate-900">${product.revenue.toFixed(2)}</p>
-                </div>
-              </div>
-            ))}
+          <div className="h-64 flex items-center justify-center">
+            <p className="text-slate-500">Top products will be implemented with real sales data</p>
           </div>
         </div>
 

@@ -1,19 +1,82 @@
 import { useState } from 'react';
 import { ShoppingCart, Heart, Eye, Star, Filter } from 'lucide-react';
-import { mockProducts } from '../data/mockData';
+import { useProducts } from '../hooks/useProducts';
+import { useOrders } from '../hooks/useOrders';
 import Button from '../components/UI/Button';
 
 export default function Store() {
   const [cart, setCart] = useState<string[]>([]);
   const [view, setView] = useState<'catalog' | 'checkout'>('catalog');
+  const [customerData, setCustomerData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+  });
+  const [processing, setProcessing] = useState(false);
+
+  const { products, loading } = useProducts();
+  const { createOrder } = useOrders();
 
   const addToCart = (productId: string) => {
     setCart([...cart, productId]);
   };
 
-  const cartItems = cart.map((id) => mockProducts.find((p) => p.id === id)!);
+  const cartItems = cart.map((id) => products.find((p) => p.id === id)!).filter(Boolean);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price, 0);
 
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) return;
+
+    setProcessing(true);
+    try {
+      const orderItems = cartItems.map(item => ({
+        product_id: item.id,
+        quantity: 1,
+        unit_price: item.price,
+      }));
+
+      const { error } = await createOrder(
+        {
+          name: `${customerData.firstName} ${customerData.lastName}`,
+          email: customerData.email,
+          address: {
+            street: customerData.address,
+            city: customerData.city,
+            state: customerData.state,
+            zipCode: customerData.zipCode,
+          },
+        },
+        orderItems
+      );
+
+      if (!error) {
+        setCart([]);
+        setView('catalog');
+        alert('Order placed successfully!');
+      } else {
+        alert('Failed to place order. Please try again.');
+      }
+    } catch (error) {
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-slate-600">Loading store...</p>
+        </div>
+      </div>
+    );
+  }
   if (view === 'checkout') {
     return (
       <div className="max-w-4xl mx-auto">
@@ -62,14 +125,20 @@ export default function Store() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">First Name</label>
                     <input
                       type="text"
+                      value={customerData.firstName}
+                      onChange={(e) => setCustomerData({ ...customerData, firstName: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Last Name</label>
                     <input
                       type="text"
+                      value={customerData.lastName}
+                      onChange={(e) => setCustomerData({ ...customerData, lastName: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                   </div>
                 </div>
@@ -77,14 +146,20 @@ export default function Store() {
                   <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                   <input
                     type="email"
+                    value={customerData.email}
+                    onChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
                   <input
                     type="text"
+                    value={customerData.address}
+                    onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
@@ -92,21 +167,30 @@ export default function Store() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
                     <input
                       type="text"
+                      value={customerData.city}
+                      onChange={(e) => setCustomerData({ ...customerData, city: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">State</label>
                     <input
                       type="text"
+                      value={customerData.state}
+                      onChange={(e) => setCustomerData({ ...customerData, state: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">ZIP Code</label>
                     <input
                       type="text"
+                      value={customerData.zipCode}
+                      onChange={(e) => setCustomerData({ ...customerData, zipCode: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     />
                   </div>
                 </div>
@@ -139,8 +223,12 @@ export default function Store() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full" disabled={cartItems.length === 0}>
-                Place Order
+              <Button 
+                className="w-full" 
+                disabled={cartItems.length === 0 || processing}
+                onClick={handlePlaceOrder}
+              >
+                {processing ? 'Processing...' : 'Place Order'}
               </Button>
             </div>
           </div>
@@ -176,7 +264,7 @@ export default function Store() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {mockProducts.map((product) => (
+        {products.map((product) => (
           <div
             key={product.id}
             className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
@@ -196,6 +284,11 @@ export default function Store() {
                   Low Stock
                 </span>
               )}
+              {product.stock === 0 && (
+                <span className="absolute top-2 left-2 px-2 py-1 bg-slate-500 text-white text-xs font-bold rounded">
+                  Out of Stock
+                </span>
+              )}
             </div>
 
             <div className="p-4">
@@ -211,9 +304,14 @@ export default function Store() {
 
               <div className="flex items-center justify-between">
                 <span className="text-xl font-bold text-blue-600">${product.price.toFixed(2)}</span>
-                <Button size="sm" onClick={() => addToCart(product.id)} className="flex items-center gap-1">
+                <Button 
+                  size="sm" 
+                  onClick={() => addToCart(product.id)} 
+                  disabled={product.stock === 0}
+                  className="flex items-center gap-1"
+                >
                   <ShoppingCart className="w-4 h-4" />
-                  Add
+                  {product.stock === 0 ? 'Out of Stock' : 'Add'}
                 </Button>
               </div>
             </div>

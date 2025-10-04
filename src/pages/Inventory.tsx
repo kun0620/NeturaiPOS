@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, CreditCard as Edit, Trash2, AlertCircle, Download, Upload } from 'lucide-react';
-import { mockProducts } from '../data/mockData';
+import { Plus, CreditCard as Edit, Trash2, CircleAlert as AlertCircle, Download, Upload } from 'lucide-react';
+import { useProducts } from '../hooks/useProducts';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import Table from '../components/UI/Table';
@@ -8,13 +8,24 @@ import Table from '../components/UI/Table';
 export default function Inventory() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
+    description: '',
+    price: '',
+    stock: '',
+    category: 'Electronics',
+    imageUrl: '', // Added image URL field
+  });
 
-  const categories = ['all', ...Array.from(new Set(mockProducts.map((p) => p.category)))];
+  const { products, loading, addProduct, deleteProduct } = useProducts();
+
+  const categories = ['all', ...Array.from(new Set(products.map((p) => p.category)))];
 
   const filteredProducts =
     selectedCategory === 'all'
-      ? mockProducts
-      : mockProducts.filter((p) => p.category === selectedCategory);
+      ? products
+      : products.filter((p) => p.category === selectedCategory);
 
   const columns = [
     { key: 'sku', label: 'SKU' },
@@ -23,10 +34,39 @@ export default function Inventory() {
     { key: 'price', label: 'Price', align: 'right' as const },
     { key: 'stock', label: 'Stock', align: 'right' as const },
     { key: 'status', label: 'Status', align: 'center' as const },
+    { key: 'image', label: 'Image', align: 'center' as const }, // Added image column
     { key: 'actions', label: 'Actions', align: 'center' as const },
   ];
 
-  const renderCell = (product: typeof mockProducts[0], column: typeof columns[0]) => {
+  const handleAddProduct = async () => {
+    const productData = {
+      ...formData,
+      price: parseFloat(formData.price),
+      stock: parseInt(formData.stock),
+    };
+
+    const { error } = await addProduct(productData);
+    if (!error) {
+      setIsModalOpen(false);
+      setFormData({
+        name: '',
+        sku: '',
+        description: '',
+        price: '',
+        stock: '',
+        category: 'Electronics',
+        imageUrl: '', // Reset image URL
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      await deleteProduct(id);
+    }
+  };
+
+  const renderCell = (product: any, column: typeof columns[0]) => {
     switch (column.key) {
       case 'sku':
         return <span className="font-mono font-medium">{product.sku}</span>;
@@ -57,13 +97,22 @@ export default function Inventory() {
             {product.stock < 20 ? 'Low Stock' : product.stock < 50 ? 'Medium' : 'In Stock'}
           </span>
         );
+      case 'image':
+        return (
+          <div className="flex justify-center">
+            <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover rounded-md" />
+          </div>
+        );
       case 'actions':
         return (
           <div className="flex items-center justify-center gap-2">
             <button className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors">
               <Edit className="w-4 h-4" />
             </button>
-            <button className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors">
+            <button 
+              onClick={() => handleDeleteProduct(product.id)}
+              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+            >
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
@@ -72,6 +121,17 @@ export default function Inventory() {
         return null;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-slate-600">Loading inventory...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -112,24 +172,24 @@ export default function Inventory() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <p className="text-sm font-medium text-slate-600">Total Products</p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">{mockProducts.length}</p>
+          <p className="text-3xl font-bold text-slate-900 mt-2">{products.length}</p>
         </div>
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <p className="text-sm font-medium text-slate-600">Total Value</p>
           <p className="text-3xl font-bold text-slate-900 mt-2">
-            ${mockProducts.reduce((sum, p) => sum + p.price * p.stock, 0).toLocaleString()}
+            ${products.reduce((sum, p) => sum + p.price * p.stock, 0).toLocaleString()}
           </p>
         </div>
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <p className="text-sm font-medium text-slate-600">Low Stock Items</p>
           <p className="text-3xl font-bold text-red-600 mt-2">
-            {mockProducts.filter((p) => p.stock < 20).length}
+            {products.filter((p) => p.stock < 20).length}
           </p>
         </div>
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <p className="text-sm font-medium text-slate-600">Categories</p>
           <p className="text-3xl font-bold text-slate-900 mt-2">
-            {new Set(mockProducts.map((p) => p.category)).size}
+            {new Set(products.map((p) => p.category)).size}
           </p>
         </div>
       </div>
@@ -150,7 +210,7 @@ export default function Inventory() {
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setIsModalOpen(false)}>Add Product</Button>
+            <Button onClick={handleAddProduct}>Add Product</Button>
           </>
         }
       >
@@ -159,8 +219,11 @@ export default function Inventory() {
             <label className="block text-sm font-medium text-slate-700 mb-2">Product Name</label>
             <input
               type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter product name"
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -168,13 +231,20 @@ export default function Inventory() {
               <label className="block text-sm font-medium text-slate-700 mb-2">SKU</label>
               <input
                 type="text"
+                value={formData.sku}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                 placeholder="PROD-001"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-              <select className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option>Electronics</option>
                 <option>Appliances</option>
                 <option>Sports</option>
@@ -189,24 +259,44 @@ export default function Inventory() {
               <label className="block text-sm font-medium text-slate-700 mb-2">Price</label>
               <input
                 type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 placeholder="0.00"
                 step="0.01"
+                min="0"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Stock Quantity</label>
               <input
                 type="number"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 placeholder="0"
+                min="0"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
+          </div>
+           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Image URL</label>
+            <input
+              type="text"
+              value={formData.imageUrl}
+              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              placeholder="Enter image URL"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
             <textarea
               rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Enter product description"
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             ></textarea>

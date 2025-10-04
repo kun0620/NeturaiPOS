@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Minus, Trash2, CreditCard, Banknote, Receipt } from 'lucide-react';
-import { mockProducts } from '../data/mockData';
+import { useProducts } from '../hooks/useProducts';
+import { useTransactions } from '../hooks/useTransactions';
 import Button from '../components/UI/Button';
 
 interface CartItem {
@@ -8,37 +9,58 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  stock: number; // Add stock to cart item
 }
 
 export default function POS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [processing, setProcessing] = useState(false);
 
-  const filteredProducts = mockProducts.filter(
+  const { products, loading: productsLoading, fetchProducts } = useProducts();
+  const { createTransaction, loading: transactionsLoading } = useTransactions();
+
+  const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addToCart = (product: typeof mockProducts[0]) => {
+  const addToCart = (product: any) => {
     const existingItem = cart.find((item) => item.id === product.id);
     if (existingItem) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      );
+      if (existingItem.quantity < product.stock) { // Check against product's current stock
+        setCart(
+          cart.map((item) =>
+            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          )
+        );
+      } else {
+        alert(`Cannot add more of ${product.name}. Maximum stock reached.`);
+      }
     } else {
-      setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1 }]);
+      if (product.stock > 0) {
+        setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1, stock: product.stock }]);
+      } else {
+        alert(`${product.name} is out of stock.`);
+      }
     }
   };
 
   const updateQuantity = (id: string, delta: number) => {
     setCart(
       cart
-        .map((item) =>
-          item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item
-        )
+        .map((item) => {
+          if (item.id === id) {
+            const newQuantity = Math.max(0, item.quantity + delta);
+            if (newQuantity > item.stock) { // Prevent adding more than available stock
+              alert(`Cannot add more of ${item.name}. Only ${item.stock} available.`);
+              return item;
+            }
+            return { ...item, quantity: newQuantity };
+          }
+          return item;
+        })
         .filter((item) => item.quantity > 0)
     );
   };
@@ -47,10 +69,46 @@ export default function POS() {
     setCart(cart.filter((item) => item.id !== id));
   };
 
+  const processPayment = async (paymentMethod: 'cash' | 'card') => {
+    if (cart.length === 0) return;
+
+    setProcessing(true);
+    try {
+      const transactionItems = cart.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+      }));
+
+      const { error } = await createTransaction(transactionItems, paymentMethod);
+      
+      if (!error) {
+        setCart([]);
+        await fetchProducts(); // Refresh product stock after transaction
+        alert('Transaction completed successfully!');
+      } else {
+        alert('Transaction failed. Please try again.');
+      }
+    } catch (error) {
+      alert('Transaction failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  };
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
 
+  if (productsLoading || transactionsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-slate-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex gap-6 h-[calc(100vh-140px)]">
       <div className="flex-1 flex flex-col">
@@ -70,7 +128,12 @@ export default function POS() {
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all text-left"
+                disabled={product.stock === 0}
+                className={`bg-white border-2 rounded-xl p-4 transition-all text-left ${
+                  product.stock === 0 
+                    ? 'border-slate-200 opacity-50 cursor-not-allowed' 
+                    : 'border-slate-200 hover:border-blue-500 hover:shadow-lg'
+                }`}
               >
                 <div className="aspect-square bg-slate-100 rounded-lg mb-3 flex items-center justify-center">
                   <span className="text-4xl">📦</span>
@@ -79,7 +142,9 @@ export default function POS() {
                 <p className="text-xs text-slate-500 mb-2">{product.sku}</p>
                 <div className="flex items-center justify-between">
                   <p className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</p>
-                  <span className="text-xs text-slate-600">Stock: {product.stock}</span>
+                  <span className={`text-xs ${product.stock === 0 ? 'text-red-600 font-bold' : 'text-slate-600'}`}>
+                    {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}
+                  </span>
                 </div>
               </button>
             ))}
@@ -153,13 +218,22 @@ export default function POS() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" disabled={cart.length === 0} className="flex items-center justify-center gap-2">
+            <Button 
+              variant="outline" 
+              disabled={cart.length === 0 || processing} 
+              onClick={() => processPayment('cash')}
+              className="flex items-center justify-center gap-2"
+            >
               <Banknote className="w-5 h-5" />
-              Cash
+              {processing ? 'Processing...' : 'Cash'}
             </Button>
-            <Button disabled={cart.length === 0} className="flex items-center justify-center gap-2">
+            <Button 
+              disabled={cart.length === 0 || processing} 
+              onClick={() => processPayment('card')}
+              className="flex items-center justify-center gap-2"
+            >
               <CreditCard className="w-5 h-5" />
-              Card
+              {processing ? 'Processing...' : 'Card'}
             </Button>
           </div>
 
@@ -167,7 +241,7 @@ export default function POS() {
             variant="secondary"
             className="w-full"
             onClick={() => setCart([])}
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || processing}
           >
             Clear Cart
           </Button>

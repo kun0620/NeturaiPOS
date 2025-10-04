@@ -1,4 +1,4 @@
-import { Product, Transaction, User, StatCard } from '../types';
+import { Product, StatCard } from '../types';
 
 export const statsData: StatCard[] = [
   { label: 'Total Revenue', value: '$45,231', change: '+12.5%', trend: 'up' },
@@ -16,22 +16,6 @@ export const mockProducts: Product[] = [
   { id: '6', name: 'Backpack', sku: 'BP-006', price: 49.99, stock: 23, category: 'Accessories' },
   { id: '7', name: 'Water Bottle', sku: 'WB-007', price: 19.99, stock: 89, category: 'Sports' },
   { id: '8', name: 'Notebook Set', sku: 'NS-008', price: 14.99, stock: 156, category: 'Stationery' },
-];
-
-export const mockTransactions: Transaction[] = [
-  { id: 'TXN-001', date: '2025-10-03 14:30', total: 159.98, items: 2, status: 'completed' },
-  { id: 'TXN-002', date: '2025-10-03 13:45', total: 79.99, items: 1, status: 'completed' },
-  { id: 'TXN-003', date: '2025-10-03 12:20', total: 249.97, items: 3, status: 'completed' },
-  { id: 'TXN-004', date: '2025-10-03 11:10', total: 89.99, items: 1, status: 'pending' },
-  { id: 'TXN-005', date: '2025-10-03 10:00', total: 129.98, items: 2, status: 'completed' },
-];
-
-export const mockUsers: User[] = [
-  { id: '1', name: 'John Anderson', email: 'john.anderson@example.com', role: 'admin', status: 'active' },
-  { id: '2', name: 'Sarah Mitchell', email: 'sarah.mitchell@example.com', role: 'manager', status: 'active' },
-  { id: '3', name: 'Michael Chen', email: 'michael.chen@example.com', role: 'staff', status: 'active' },
-  { id: '4', name: 'Emily Rodriguez', email: 'emily.rodriguez@example.com', role: 'staff', status: 'active' },
-  { id: '5', name: 'David Kim', email: 'david.kim@example.com', role: 'staff', status: 'inactive' },
 ];
 
 export const chartData = {

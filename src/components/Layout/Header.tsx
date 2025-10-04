@@ -1,4 +1,6 @@
 import { Search, Bell, Settings } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import Button from '../UI/Button';
 
 interface HeaderProps {
   title: string;
@@ -6,6 +8,12 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle }: HeaderProps) {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
       <div className="px-8 py-4">
@@ -30,6 +38,9 @@ export default function Header({ title, subtitle }: HeaderProps) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
 
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              Sign Out
+            </Button>
             <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
               <Settings className="w-5 h-5 text-slate-600" />
             </button>
