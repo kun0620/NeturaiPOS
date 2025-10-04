@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AuthGuard from './components/Auth/AuthGuard';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import Dashboard from './pages/Dashboard';
@@ -48,19 +49,21 @@ function App() {
   const currentConfig = pageConfig[currentPage];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+    <AuthGuard>
+      <div className="min-h-screen bg-slate-50 flex">
+        <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title={currentConfig.title} subtitle={currentConfig.subtitle} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title={currentConfig.title} subtitle={currentConfig.subtitle} />
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1600px] mx-auto p-8">
-            {currentConfig.component}
-          </div>
-        </main>
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-[1600px] mx-auto p-8">
+              {currentConfig.component}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
 
