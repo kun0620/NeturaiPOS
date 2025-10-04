@@ -38,7 +38,15 @@ export function useAuth() {
       password,
     });
 
-    // Profile will be created automatically by trigger
+    if (data.user && !error) {
+      // Create profile
+      await supabase.from('profiles').insert({
+        id: data.user.id,
+        username: userData.username,
+        role: userData.role || 'staff',
+        status: 'active',
+      });
+    }
 
     return { data, error };
   };
