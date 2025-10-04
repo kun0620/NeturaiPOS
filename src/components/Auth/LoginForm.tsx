@@ -91,7 +91,10 @@ export default function LoginForm() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-600">
-            Demo credentials: admin@retailhub.com / password123
+            Please use your Supabase account credentials to sign in.
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            Create an account in your Supabase dashboard under Authentication > Users
           </p>
         </div>
       </div>
