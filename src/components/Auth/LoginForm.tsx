@@ -94,7 +94,7 @@ export default function LoginForm() {
             Please use your Supabase account credentials to sign in.
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Create an account in your Supabase dashboard under Authentication > Users
+            Create an account in your Supabase dashboard under Authentication &gt; Users
           </p>
         </div>
       </div>
