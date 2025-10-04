@@ -32,7 +32,7 @@ export default function Dashboard() {
       const totalProducts = productsData?.reduce((sum, p) => sum + p.stock, 0) || 0;
 
       setStats([
-        { label: 'Total Revenue', value: `$${totalRevenue.toFixed(2)}`, change: '+12.5%', trend: 'up' },
+        { label: 'Total Revenue', value: `฿${totalRevenue.toFixed(2)}`, change: '+12.5%', trend: 'up' },
         { label: 'Total Orders', value: totalOrders.toString(), change: '+8.2%', trend: 'up' },
         { label: 'Products Sold', value: totalProducts.toString(), change: '+15.3%', trend: 'up' },
         { label: 'Low Stock Items', value: lowStockItems.toString(), change: '-5', trend: 'down' },
@@ -104,7 +104,7 @@ export default function Dashboard() {
                     {new Date(transaction.created_at).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600 capitalize">{transaction.payment_method}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-slate-900">${parseFloat(transaction.total_amount).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-slate-900">฿{parseFloat(transaction.total_amount).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${

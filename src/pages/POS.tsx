@@ -96,7 +96,8 @@ export default function POS() {
     }
   };
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.1;
+  const taxRate = 0.07; // Change tax rate to 7%
+  const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
   if (productsLoading || transactionsLoading) {
@@ -141,7 +142,7 @@ export default function POS() {
                 <h4 className="font-semibold text-slate-900 mb-1 line-clamp-2">{product.name}</h4>
                 <p className="text-xs text-slate-500 mb-2">{product.sku}</p>
                 <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-blue-600">฿{product.price.toFixed(2)}</p>
                   <span className={`text-xs ${product.stock === 0 ? 'text-red-600 font-bold' : 'text-slate-600'}`}>
                     {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}
                   </span>
@@ -169,7 +170,7 @@ export default function POS() {
                 <div key={item.id} className="flex items-start gap-3 pb-4 border-b border-slate-100">
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-900">{item.name}</h4>
-                    <p className="text-sm text-slate-600">${item.price.toFixed(2)} each</p>
+                    <p className="text-sm text-slate-600">฿{item.price.toFixed(2)} each</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -193,7 +194,7 @@ export default function POS() {
                     </button>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-bold text-slate-900">฿{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -205,15 +206,15 @@ export default function POS() {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-600">Subtotal</span>
-              <span className="font-semibold text-slate-900">${subtotal.toFixed(2)}</span>
+              <span className="font-semibold text-slate-900">฿{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Tax (10%)</span>
-              <span className="font-semibold text-slate-900">${tax.toFixed(2)}</span>
+              <span className="text-slate-600">Tax (7%)</span>
+              <span className="font-semibold text-slate-900">฿{tax.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-xl pt-2 border-t border-slate-200">
               <span className="font-bold text-slate-900">Total</span>
-              <span className="font-bold text-blue-600">${total.toFixed(2)}</span>
+              <span className="font-bold text-blue-600">฿{total.toFixed(2)}</span>
             </div>
           </div>
 

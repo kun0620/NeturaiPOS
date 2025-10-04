@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, TrendingUp, DollarSign, ShoppingBag, Users as UsersIcon } from 'lucide-react';
+import { Download, TrendingUp, ShoppingBag, Users as UsersIcon, DollarSign } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import Button from '../components/UI/Button';
 
@@ -59,12 +59,12 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-slate-900">Analytics & Reports</h3>
+          <h3 className="text-xl font-bold text-slate-900">Analytics &amp; Reports</h3>
           <p className="text-sm text-slate-600 mt-1">Comprehensive business insights and metrics</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-3 md:mt-0">
           <select className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option>Last 7 Days</option>
             <option>Last 30 Days</option>
@@ -84,7 +84,7 @@ export default function Reports() {
             <DollarSign className="w-8 h-8 opacity-80" />
             <span className="text-sm font-medium opacity-90">Revenue</span>
           </div>
-          <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+          <p className="text-3xl font-bold">฿{stats.totalRevenue.toFixed(2)}</p>
           <div className="flex items-center gap-1 mt-2 text-sm opacity-90">
             <TrendingUp className="w-4 h-4" />
             <span>+12.5% from last period</span>
@@ -108,7 +108,7 @@ export default function Reports() {
             <DollarSign className="w-8 h-8 opacity-80" />
             <span className="text-sm font-medium opacity-90">Avg Order</span>
           </div>
-          <p className="text-3xl font-bold">${stats.avgOrderValue.toFixed(2)}</p>
+          <p className="text-3xl font-bold">฿{stats.avgOrderValue.toFixed(2)}</p>
           <div className="flex items-center gap-1 mt-2 text-sm opacity-90">
             <TrendingUp className="w-4 h-4" />
             <span>+5.1% from last period</span>
@@ -130,9 +130,9 @@ export default function Reports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-slate-900">Sales Trend</h3>
-            <select className="px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select className="px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2 md:mt-0">
               <option>Daily</option>
               <option>Weekly</option>
               <option>Monthly</option>
@@ -144,9 +144,9 @@ export default function Reports() {
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-slate-900">Order Volume</h3>
-            <select className="px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select className="px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2 md:mt-0">
               <option>Daily</option>
               <option>Weekly</option>
               <option>Monthly</option>

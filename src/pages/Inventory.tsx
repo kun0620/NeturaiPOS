@@ -79,7 +79,7 @@ export default function Inventory() {
           </span>
         );
       case 'price':
-        return <span className="font-semibold">${product.price.toFixed(2)}</span>;
+        return <span className="font-semibold">฿{product.price.toFixed(2)}</span>;
       case 'stock':
         return <span className={product.stock < 20 ? 'text-red-600 font-bold' : ''}>{product.stock}</span>;
       case 'status':
@@ -177,7 +177,7 @@ export default function Inventory() {
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
           <p className="text-sm font-medium text-slate-600">Total Value</p>
           <p className="text-3xl font-bold text-slate-900 mt-2">
-            ${products.reduce((sum, p) => sum + p.price * p.stock, 0).toLocaleString()}
+            ฿{products.reduce((sum, p) => sum + p.price * p.stock, 0).toLocaleString()}
           </p>
         </div>
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">

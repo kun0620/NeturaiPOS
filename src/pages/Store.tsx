@@ -106,7 +106,7 @@ export default function Store() {
                         <p className="text-sm text-slate-600 mt-1">{item.category}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-slate-900">${item.price.toFixed(2)}</p>
+                        <p className="font-bold text-slate-900">฿{item.price.toFixed(2)}</p>
                         <button className="text-sm text-red-600 hover:text-red-700 mt-2">
                           Remove
                         </button>
@@ -204,21 +204,21 @@ export default function Store() {
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span className="font-semibold">${cartTotal.toFixed(2)}</span>
+                  <span className="font-semibold">฿{cartTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Shipping</span>
-                  <span className="font-semibold">$9.99</span>
+                  <span className="font-semibold">฿9.99</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Tax</span>
-                  <span className="font-semibold">${(cartTotal * 0.1).toFixed(2)}</span>
+                  <span className="font-semibold">฿{(cartTotal * 0.1).toFixed(2)}</span>
                 </div>
                 <div className="border-t border-slate-200 pt-2 mt-2">
                   <div className="flex justify-between">
                     <span className="font-bold text-slate-900">Total</span>
                     <span className="font-bold text-blue-600 text-xl">
-                      ${(cartTotal + 9.99 + cartTotal * 0.1).toFixed(2)}
+                      ฿{(cartTotal + 9.99 + cartTotal * 0.1).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export default function Store() {
               <p className="text-xs text-slate-600 mb-3">{product.category}</p>
 
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-blue-600">${product.price.toFixed(2)}</span>
+                <span className="text-xl font-bold text-blue-600">฿{product.price.toFixed(2)}</span>
                 <Button 
                   size="sm" 
                   onClick={() => addToCart(product.id)} 

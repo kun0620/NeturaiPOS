@@ -17,13 +17,14 @@ const navigationItems = [
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen sticky top-0">
-      <div className="p-6 border-b border-slate-800">
+    <aside className="bg-slate-900 text-white flex flex-col h-screen sticky top-0 md:flex md:w-64 transition-all duration-300"
+      style={{ width: 'var(--sidebar-width)' }}>
+      <div className="p-6 border-b border-slate-800 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
             <Store className="w-6 h-6" />
           </div>
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-xl font-bold">RetailHub</h1>
             <p className="text-xs text-slate-400">Integrated Commerce</p>
           </div>
@@ -39,14 +40,13 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
               <li key={item.id}>
                 <button
                   onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium md:block hidden">{item.label}</span>
                 </button>
               </li>
             );
@@ -54,12 +54,12 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-slate-800 flex-shrink-0">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
             <span className="text-sm font-semibold">AD</span>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 hidden md:block">
             <p className="text-sm font-medium">Admin User</p>
             <p className="text-xs text-slate-400">admin@retailhub.com</p>
           </div>

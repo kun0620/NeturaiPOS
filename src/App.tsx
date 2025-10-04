@@ -57,7 +57,7 @@ function App() {
           <Header title={currentConfig.title} subtitle={currentConfig.subtitle} />
 
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-[1600px] mx-auto p-8">
+            <div className="max-w-[1600px] mx-auto p-4 md:p-8">
               {currentConfig.component}
             </div>
           </main>
