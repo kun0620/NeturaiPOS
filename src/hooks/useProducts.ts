@@ -10,6 +10,21 @@ export function useProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      
+      // Check if Supabase is configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        console.warn('Supabase not configured, using mock data');
+        const mockProducts = [
+          { id: '1', name: 'Wireless Headphones', sku: 'WH-001', price: 79.99, stock: 45, category: 'Electronics' },
+          { id: '2', name: 'Smart Watch', sku: 'SW-002', price: 199.99, stock: 12, category: 'Electronics' },
+          { id: '3', name: 'Coffee Maker', sku: 'CM-003', price: 89.99, stock: 8, category: 'Appliances' },
+          { id: '4', name: 'Yoga Mat', sku: 'YM-004', price: 29.99, stock: 67, category: 'Sports' },
+        ];
+        setProducts(mockProducts);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -19,6 +34,7 @@ export function useProducts() {
       setProducts(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
     }

@@ -14,6 +14,20 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      // Check if Supabase is configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        console.warn('Supabase not configured, using mock data');
+        setStats([
+          { label: 'Total Revenue', value: '$0.00', change: '+0%', trend: 'neutral' },
+          { label: 'Total Orders', value: '0', change: '+0%', trend: 'neutral' },
+          { label: 'Products Sold', value: '0', change: '+0%', trend: 'neutral' },
+          { label: 'Low Stock Items', value: '0', change: '0', trend: 'neutral' },
+        ]);
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
       // Fetch transactions
       const { data: transactionsData } = await supabase
         .from('transactions')
@@ -41,6 +55,14 @@ export default function Dashboard() {
       setTransactions(transactionsData || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Fallback to empty data on error
+      setStats([
+        { label: 'Total Revenue', value: '$0.00', change: '+0%', trend: 'neutral' },
+        { label: 'Total Orders', value: '0', change: '+0%', trend: 'neutral' },
+        { label: 'Products Sold', value: '0', change: '+0%', trend: 'neutral' },
+        { label: 'Low Stock Items', value: '0', change: '0', trend: 'neutral' },
+      ]);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }

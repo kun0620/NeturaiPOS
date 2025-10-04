@@ -91,10 +91,21 @@ export default function LoginForm() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-600">
-            Please use your Supabase account credentials to sign in.
+            กรุณาใช้ข้อมูลบัญชี Supabase ของคุณในการเข้าสู่ระบบ
           </p>
           <p className="text-xs text-slate-500 mt-2">
-            Create an account in your Supabase dashboard under Authentication &gt; Users
+            สร้างบัญชีใน Supabase dashboard ที่ Authentication &gt; Users
+          </p>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-700 font-medium">
+              💡 หากยังไม่ได้ตั้งค่า Supabase:
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              1. คลิกปุ่ม "Supabase" ที่มุมบนขวา<br/>
+              2. ตั้งค่า project และ database<br/>
+              3. สร้าง user ใน Authentication
+            </p>
+          </div>
           </p>
         </div>
       </div>
