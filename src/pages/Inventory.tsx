@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, CreditCard as Edit, Trash2, AlertCircle, Download, Upload } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, CircleAlert as AlertCircle, Download, Upload } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
