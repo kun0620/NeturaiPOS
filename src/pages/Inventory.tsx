@@ -261,8 +261,8 @@ export default function Inventory() {
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                placeholder="0.00"
-                step="0.01"
+                placeholder="0"
+                step="1"
                 min="0"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
