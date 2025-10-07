@@ -1,137 +1,165 @@
-import { CartItem } from '../pages/POS'; // Import CartItem type
+import { CartItem } from '../pages/POS';
+import { Transaction, TransactionItem } from '../types';
 import { format } from 'date-fns';
+import { useCompanySettings } from '../hooks/useCompanySettings'; // Import the hook
 
-interface ReceiptProps {
-  transactionDetails: {
-    cart: CartItem[];
-    subtotal: number;
-    total: number; // This is the grand total (amount after discount, rounded)
-    paymentMethod: 'cash' | 'card';
-    cashTendered?: number;
-    changeDue?: number;
-    discountAmount: number; // New field
-    amountAfterDiscount: number; // New field
-    vatAmount: number; // New field
-    priceExcludingVAT: number; // New field
-  } | null;
+// Define a type that can be either TransactionDetails (from POS) or Transaction (from DB)
+export interface ReceiptProps {
+  transaction: (TransactionDetails | Transaction) | null;
+  currentSalespersonName?: string; // Add new prop for salesperson name from POS
 }
 
-export default function Receipt({ transactionDetails }: ReceiptProps) {
-  if (!transactionDetails) {
-    return <div className="text-center text-slate-500">ไม่พบข้อมูลรายการ</div>;
+// Helper type guard to differentiate between TransactionDetails and Transaction
+const isTransactionDetails = (t: TransactionDetails | Transaction): t is TransactionDetails => {
+  return (t as TransactionDetails).cart !== undefined;
+};
+
+// Re-export CartItem and TransactionDetails from POS.tsx for use here
+export interface TransactionDetails {
+  cart: CartItem[];
+  subtotal: number;
+  total: number;
+  paymentMethod: 'cash' | 'card';
+  cashTendered?: number;
+  changeDue?: number;
+  discountAmount: number;
+  amountAfterDiscount: number;
+  vatAmount: number;
+  priceExcludingVAT: number;
+  salespersonName?: string; // Add salespersonName here for consistency
+}
+
+export default function Receipt({ transaction, currentSalespersonName }: ReceiptProps) {
+  const { settings, loading, error } = useCompanySettings(); // Fetch company settings
+
+  if (!transaction) {
+    return <div className="text-center text-slate-500 p-4">ไม่พบข้อมูลใบเสร็จ</div>;
   }
 
-  const { 
-    cart, 
-    subtotal, 
-    total, 
-    paymentMethod, 
-    cashTendered, 
-    changeDue,
-    discountAmount, // Destructure new fields
-    amountAfterDiscount, // Destructure new fields
-    vatAmount, // Destructure new fields
-    priceExcludingVAT, // Destructure new fields
-  } = transactionDetails;
+  const isDetails = isTransactionDetails(transaction);
 
-  const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const currentDate = format(new Date(), 'dd/MM/yyyy');
+  // Extract common properties, handling differences between TransactionDetails and Transaction
+  const items = isDetails
+    ? transaction.cart
+    : transaction.transaction_items.map((item: TransactionItem) => ({
+        id: item.product_id,
+        name: item.products?.name || 'Unknown Product',
+        price: item.unit_price,
+        quantity: item.quantity,
+        stock: 0, // Not relevant for receipt display
+      }));
+
+  const subtotal = isDetails
+    ? transaction.subtotal
+    : transaction.transaction_items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+
+  const discountAmount = isDetails ? transaction.discountAmount : transaction.discount_amount;
+  const amountAfterDiscount = isDetails ? transaction.amountAfterDiscount : subtotal - discountAmount; // Recalculate for consistency
+  const vatAmount = isDetails ? transaction.vatAmount : transaction.tax_amount;
+  const priceExcludingVAT = isDetails ? transaction.priceExcludingVAT : transaction.price_excluding_vat;
+  const total = isDetails ? transaction.total : transaction.total_amount;
+  const paymentMethod = isDetails ? transaction.paymentMethod : transaction.payment_method;
+  const cashTendered = isDetails ? transaction.cashTendered : undefined; // Only available for immediate cash transactions
+  const changeDue = isDetails ? transaction.changeDue : undefined; // Only available for immediate cash transactions
+  const transactionDate = isDetails ? new Date() : new Date(transaction.created_at);
+  const transactionId = isDetails ? 'N/A' : transaction.id.substring(0, 8); // Use a short ID for display
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Use company settings or fallback to default placeholders
+  const companyName = settings?.company_name || 'บริษัท โฟลว์แอคเคาท์ จำกัด';
+  const companyAddressLine1 = settings?.company_address_line1 || '141/12 ชั้น 11 ยูนิต 12B อาคารชุด สกุลไทย สุรวงศ์';
+  const companyAddressLine2 = settings?.company_address_line2 || 'ทาวเวอร์ ถนนสุรวงศ์ แขวงสุริยวงศ์ เขตบางรัก';
+  const companyAddressLine3 = settings?.company_address_line3 || 'กรุงเทพมหานคร 10500';
+  const taxId = settings?.tax_id || '1234567890000';
+  const phone = settings?.phone || '022374777';
+  const website = settings?.website || 'www.example.com';
+  const receiptHeaderText = settings?.receipt_header_text || 'ใบกำกับภาษีอย่างย่อ/ใบเสร็จรับเงิน';
+  const receiptFooterText = settings?.receipt_footer_text || 'ใช้งาน POS ฟรีได้ที่ FlowAccount.com';
+  const vatRateDisplay = settings?.vat_rate !== undefined ? (settings.vat_rate * 100).toFixed(0) : '7'; // Display as percentage
+  
+  // Determine salesperson name: 1. from transaction (if historical), 2. from currentSalespersonName (if new transaction)
+  // Removed fallback to settings?.salesperson_name as per user's request.
+  const displaySalespersonName = isDetails 
+    ? currentSalespersonName || transaction.salespersonName || 'สมชาย ใจดี'
+    : transaction.salesperson_name || 'สมชาย ใจดี';
 
   return (
-    <div className="font-sans text-sm text-slate-800 p-4 bg-white rounded-lg shadow-inner">
+    <div className="bg-white p-6 rounded-lg shadow-inner max-w-md mx-auto font-mono text-sm text-slate-800">
       <div className="text-center mb-6">
         {/* Placeholder for logo */}
-        <div className="w-16 h-16 bg-slate-200 rounded-full mx-auto mb-3 flex items-center justify-center">
-          <span className="text-2xl">🧾</span>
+        <div className="w-12 h-12 bg-slate-200 rounded-full mx-auto mb-2 flex items-center justify-center">
+          <span className="text-xl">📈</span>
         </div>
-        <h3 className="font-bold text-lg text-slate-900">บริษัท เนทูไร พีโอเอส จำกัด</h3>
-        <p className="text-xs text-slate-600">
-          123/456 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย<br />
-          กรุงเทพมหานคร 10110
-        </p>
-        <p className="text-xs text-slate-600 mt-1">
-          เลขผู้เสียภาษี: 1234567890000<br />
-          โทร. 02-123-4567<br />
-          เว็บไซต์: www.neturaipos.com
-        </p>
+        <h2 className="text-lg font-bold text-slate-900 mb-1">{companyName}</h2>
+        <p className="text-xs text-slate-600">(สำนักงานใหญ่)</p>
+        <p className="text-xs text-slate-600">{companyAddressLine1}</p>
+        <p className="text-xs text-slate-600">{companyAddressLine2}</p>
+        <p className="text-xs text-slate-600">{companyAddressLine3}</p>
+        <p className="text-xs text-slate-600 mt-2">เลขผู้เสียภาษี {taxId}</p>
+        <p className="text-xs text-slate-600">โทร. {phone}</p>
+        <p className="text-xs text-slate-600">เว็บไซต์ {website}</p>
+      </div>
+
+      <div className="border-t border-dashed border-slate-300 py-4 mb-4">
+        <p className="text-center font-semibold text-slate-900 mb-2">{receiptHeaderText}</p>
+        <p className="text-center text-slate-700 mb-4">{transactionId}</p> {/* Use transactionId here */}
+        <div className="flex justify-between text-xs mb-1">
+          <span>พนักงานขาย</span> {/* Changed back to "พนักงานขาย" */}
+          <span>{displaySalespersonName}</span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span>วันที่</span>
+          <span>{format(transactionDate, 'dd/MM/yyyy HH:mm')}</span> {/* Changed format here */}
+        </div>
       </div>
 
       <div className="border-t border-b border-dashed border-slate-300 py-4 mb-4">
-        <h4 className="text-center font-semibold text-slate-900 mb-3">ใบกำกับภาษีอย่างย่อ/ใบเสร็จรับเงิน</h4>
-        <div className="flex justify-between mb-1">
-          <span>พนักงานขาย:</span>
-          <span>สมชาย ใจดี</span>
-        </div>
-        <div className="flex justify-between">
-          <span>วันที่:</span>
-          <span>{currentDate}</span>
-        </div>
-        <div className="flex justify-between mt-1">
-          <span>วิธีการชำระเงิน:</span>
-          <span>{paymentMethod === 'cash' ? 'เงินสด' : 'บัตรเครดิต/เดบิต'}</span>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        {cart.map((item, index) => (
-          <div key={item.id} className="flex justify-between items-start mb-2">
-            <div className="flex-1 pr-2">
-              <p className="font-medium text-slate-900">{item.name}</p>
-              <p className="text-xs text-slate-600">{item.quantity} x ฿{item.price.toFixed(0)}</p>
-            </div>
-            <p className="font-semibold text-slate-900">฿{(item.price * item.quantity).toFixed(0)}</p>
+        {items.map((item, index) => (
+          <div key={item.id + '-' + index} className="flex justify-between mb-2">
+            <span className="w-10">{item.quantity}</span>
+            <span className="flex-1">{item.name}</span>
+            <span className="w-20 text-right">{(item.price * item.quantity).toFixed(2)}</span>
           </div>
         ))}
-      </div>
-
-      <div className="border-t border-dashed border-slate-300 pt-4 mb-4">
-        <div className="flex justify-between mb-1">
-          <span>จำนวนรวมสินค้า:</span>
-          <span>{totalQuantity} ชิ้น</span>
-        </div>
-        <div className="flex justify-between mb-1">
-          <span>รวมเป็นเงิน:</span>
-          <span>฿{subtotal.toFixed(0)}</span>
-        </div>
-        <div className="flex justify-between mb-1">
-          <span>ส่วนลด:</span>
-          <span>฿{discountAmount.toFixed(0)}</span>
-        </div>
-        <div className="flex justify-between mb-1">
-          <span>จำนวนเงินหลังหักส่วนลด:</span>
-          <span>฿{amountAfterDiscount.toFixed(0)}</span>
-        </div>
-        <div className="flex justify-between mb-1">
-          <span>ภาษีมูลค่าเพิ่ม 7%:</span>
-          <span>฿{vatAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between mb-1">
-          <span>ราคาไม่รวมภาษีมูลค่าเพิ่ม:</span>
-          <span>฿{priceExcludingVAT.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between font-bold text-lg text-slate-900 mt-2 pt-2 border-t border-slate-200">
-          <span>รวมทั้งสิ้น:</span>
-          <span>฿{total.toFixed(0)}</span>
+        <div className="flex justify-between mt-4 pt-2 border-t border-dashed border-slate-300">
+          <span>จำนวนรวม</span>
+          <span className="font-semibold">{totalQuantity}</span>
         </div>
       </div>
 
-      {paymentMethod === 'cash' && (
-        <div className="border-t border-dashed border-slate-300 pt-4 mb-4">
-          <div className="flex justify-between mb-1">
-            <span>เงินที่รับมา:</span>
-            <span>฿{(cashTendered ?? 0).toFixed(0)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg text-green-600">
-            <span>เงินทอน:</span>
-            <span>฿{(changeDue ?? 0).toFixed(0)}</span>
-          </div>
+      <div className="space-y-2 mb-4">
+        <div className="flex justify-between">
+          <span>รวมเป็นเงิน</span>
+          <span className="font-semibold">{subtotal.toFixed(2)}</span>
         </div>
-      )}
+        <div className="flex justify-between">
+          <span>ส่วนลด</span>
+          <span className="font-semibold">{discountAmount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>จำนวนเงินหลังหักส่วนลด</span>
+          <span className="font-semibold">{amountAfterDiscount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>ภาษีมูลค่าเพิ่ม {vatRateDisplay}%</span>
+          <span className="font-semibold">{vatAmount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>ราคาไม่รวมภาษีมูลค่าเพิ่ม</span>
+          <span className="font-semibold">{priceExcludingVAT.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-lg font-bold border-t-2 border-b-4 border-slate-800 pt-2 mt-2">
+          <span>รวมทั้งสิ้น</span>
+          <span>{total.toFixed(2)}</span>
+        </div>
+      </div>
 
-      <div className="border-t border-dashed border-slate-300 pt-4 text-center text-xs text-slate-500">
-        <p className="font-semibold mb-1">VAT INCLUDED</p>
-        <p>ขอบคุณที่ใช้บริการ!</p>
-        <p className="mt-2">ใช้งาน POS ฟรีได้ที่ NeturaiPOS.com</p>
+      <div className="text-center text-xs text-slate-600 mb-6">
+        <p className="font-bold text-slate-900 mt-4">VAT INCLUDED</p>
+      </div>
+
+      <div className="text-center text-xs text-slate-600 border-t border-dashed border-slate-300 pt-4">
+        <p>{receiptFooterText}</p>
       </div>
     </div>
   );

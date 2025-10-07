@@ -29,6 +29,9 @@ export interface Transaction {
   status: 'completed' | 'pending' | 'refunded';
   created_at: string;
   transaction_items?: TransactionItem[];
+  discount_amount?: number;
+  price_excluding_vat?: number;
+  salesperson_name?: string; // Add salesperson_name
 }
 
 export interface TransactionItem {
@@ -69,10 +72,19 @@ export interface OrderItem {
   };
 }
 
+export interface Profile {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'manager' | 'staff';
+  status: 'active' | 'inactive';
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface User {
   id: string;
   name: string;
-  username: string; // Added username
   email: string;
   role: 'admin' | 'manager' | 'staff';
   status: 'active' | 'inactive';
@@ -83,4 +95,19 @@ export interface StatCard {
   value: string;
   change: string;
   trend: 'up' | 'down' | 'neutral';
+}
+
+export interface CompanySettings {
+  id: string;
+  company_name: string;
+  address_line1: string;
+  address_line2?: string;
+  phone_number: string;
+  email: string;
+  website?: string;
+  logo_url?: string;
+  vat_rate: number;
+  receipt_footer_message: string;
+  created_at?: string;
+  updated_at?: string;
 }

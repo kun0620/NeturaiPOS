@@ -8,6 +8,8 @@ import Inventory from './pages/Inventory';
 import Store from './pages/Store';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
+import Documents from './pages/Documents';
+import AdminSettings from './pages/AdminSettings';
 import { PageType } from './types';
 
 function App() {
@@ -44,6 +46,16 @@ function App() {
       subtitle: 'View insights and generate reports',
       component: <Reports />,
     },
+    documents: {
+      title: 'Documents',
+      subtitle: 'View, download, and print your business documents',
+      component: <Documents />,
+    },
+    settings: {
+      title: 'Admin Settings',
+      subtitle: 'Manage company details and receipt configurations',
+      component: <AdminSettings />,
+    },
   };
 
   const currentConfig = pageConfig[currentPage];
@@ -54,7 +66,7 @@ function App() {
         <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title={currentConfig.title} subtitle={currentConfig.subtitle} />
+          <Header title={currentConfig.title} subtitle={currentConfig.subtitle} onNavigate={setCurrentPage} />
 
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-[1600px] mx-auto p-4 md:p-8">

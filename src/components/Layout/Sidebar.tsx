@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingCart, Package, Store, Users, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Store, Users, BarChart3, FileText, Settings } from 'lucide-react';
 import { PageType } from '../../types';
 
 interface SidebarProps {
@@ -13,6 +13,8 @@ const navigationItems = [
   { id: 'store' as PageType, label: 'Online Store', icon: Store },
   { id: 'users' as PageType, label: 'Users', icon: Users },
   { id: 'reports' as PageType, label: 'Reports', icon: BarChart3 },
+  { id: 'documents' as PageType, label: 'Documents', icon: FileText },
+  // { id: 'settings' as PageType, label: 'Settings', icon: Settings }, // Removed Settings item from sidebar
 ];
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {

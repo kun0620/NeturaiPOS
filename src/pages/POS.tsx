@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, Wallet } from 'lucide-react';
+import { Plus, Minus, Trash2, CreditCard, Banknote, Receipt as ReceiptIcon, Wallet, Printer } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useTransactions } from '../hooks/useTransactions';
+import { useAuth } from '../hooks/useAuth'; // Import useAuth hook
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal'; // Import the Modal component
 import Receipt from '../components/Receipt'; // Import the Receipt component
+import { TransactionDetails } from '../components/Receipt'; // Import TransactionDetails from Receipt.tsx
 
 export interface CartItem {
   id: string;
@@ -12,19 +14,6 @@ export interface CartItem {
   price: number;
   quantity: number;
   stock: number; // Add stock to cart item
-}
-
-interface TransactionDetails {
-  cart: CartItem[];
-  subtotal: number;
-  total: number; // This is the grand total (amount after discount, rounded)
-  paymentMethod: 'cash' | 'card';
-  cashTendered?: number;
-  changeDue?: number;
-  discountAmount: number; // New field
-  amountAfterDiscount: number; // New field
-  vatAmount: number; // New field
-  priceExcludingVAT: number; // New field
 }
 
 export default function POS() {
@@ -36,8 +25,16 @@ export default function POS() {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false); // State for receipt modal
   const [lastTransactionDetails, setLastTransactionDetails] = useState<TransactionDetails | null>(null); // State to store last transaction details
 
-  const { products, loading: productsLoading, fetchProducts } = useProducts();
+  const { products, loading: productsLoading, refetch } = useProducts();
   const { createTransaction, loading: transactionsLoading } = useTransactions();
+  const { user } = useAuth(); // Get current user from useAuth
+
+  const currentSalespersonName = user?.user_metadata?.name as string || 'พนักงาน'; // Get salesperson name from user_metadata
+
+  // --- DEBUGGING LOGS ---
+  console.log('Current user object:', user);
+  console.log('Current salesperson name (from user_metadata):', currentSalespersonName);
+  // --- END DEBUGGING LOGS ---
 
   const filteredProducts = products.filter(
     (product) =>
@@ -104,16 +101,23 @@ export default function POS() {
   const processPayment = async (paymentMethod: 'cash' | 'card', tenderedAmountFromCall?: number | '') => {
     if (cart.length === 0) return;
 
-    // Ensure tenderedAmount is a number or undefined for internal logic and storage
     let finalTenderedAmount: number | undefined;
     if (typeof tenderedAmountFromCall === 'number') {
       finalTenderedAmount = tenderedAmountFromCall;
     } else if (tenderedAmountFromCall === '') {
-      finalTenderedAmount = undefined; // Treat empty string as undefined for storage
+      finalTenderedAmount = undefined;
     }
+
+    console.log('Processing payment:', {
+      paymentMethod,
+      tenderedAmountFromCall,
+      finalTenderedAmount,
+      total, // The calculated total from POS.tsx
+    });
 
     if (paymentMethod === 'cash' && (finalTenderedAmount === undefined || finalTenderedAmount < total)) {
       alert('เงินที่รับมาน้อยกว่ายอดรวม.');
+      console.log('Cash payment validation failed: tendered amount is undefined or less than total.');
       return;
     }
 
@@ -125,7 +129,17 @@ export default function POS() {
         unit_price: item.price,
       }));
 
-      const { error } = await createTransaction(transactionItems, paymentMethod);
+      // Pass the calculated financial details and salesperson name to createTransaction
+      const { error } = await createTransaction(
+        transactionItems,
+        paymentMethod,
+        total, // totalAmount
+        vatAmount, // vatAmount
+        discountAmount, // discountAmount
+        priceExcludingVAT, // priceExcludingVAT
+        user?.id, // user_id
+        currentSalespersonName // salespersonName
+      );
       
       if (!error) {
         // Store transaction details for receipt
@@ -140,19 +154,22 @@ export default function POS() {
           amountAfterDiscount, // Pass amount after discount
           vatAmount, // Pass VAT amount
           priceExcludingVAT, // Pass price excluding VAT
+          salespersonName: currentSalespersonName, // Pass salesperson name
         });
 
         setCart([]);
         setCashTendered(''); // Clear cash tendered after successful transaction
         setIsCashModalOpen(false); // Close cash modal
-        await fetchProducts(); // Refresh product stock after transaction
+        await refetch(); // Refresh product stock after transaction
         alert('ทำรายการสำเร็จ!');
         setIsReceiptModalOpen(true); // Open receipt modal
       } else {
         alert('ทำรายการไม่สำเร็จ. กรุณาลองอีกครั้ง.');
+        console.error('Transaction creation failed:', error);
       }
     } catch (error) {
       alert('ทำรายการไม่สำเร็จ. กรุณาลองอีกครั้ง.');
+      console.error('Error during payment processing:', error);
     } finally {
       setProcessing(false);
     }
@@ -162,6 +179,19 @@ export default function POS() {
     if (cart.length === 0) return;
     setCashTendered(''); // Reset cash tendered when opening modal
     setIsCashModalOpen(true);
+  };
+
+  const handlePrintReceipt = () => {
+    if (lastTransactionDetails) {
+      const printContent = document.getElementById('receipt-print-area-pos');
+      if (printContent) {
+        const originalContents = document.body.innerHTML;
+        document.body.innerHTML = printContent.innerHTML;
+        window.print();
+        document.body.innerHTML = originalContents;
+        window.location.reload(); // Reload to restore original page state
+      }
+    }
   };
 
   if (productsLoading || transactionsLoading) {
@@ -415,8 +445,20 @@ export default function POS() {
         isOpen={isReceiptModalOpen}
         onClose={() => setIsReceiptModalOpen(false)}
         title="ใบเสร็จรับเงิน"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={handlePrintReceipt} disabled={!lastTransactionDetails}>
+              <Printer className="w-4 h-4 mr-2" /> พิมพ์
+            </Button>
+            <Button onClick={() => setIsReceiptModalOpen(false)}>
+              ปิด
+            </Button>
+          </div>
+        }
       >
-        <Receipt transactionDetails={lastTransactionDetails} />
+        <div id="receipt-print-area-pos"> {/* Add an ID for printing */}
+          <Receipt transaction={lastTransactionDetails} currentSalespersonName={currentSalespersonName} />
+        </div>
       </Modal>
     </div>
   );

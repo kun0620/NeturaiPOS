@@ -1,28 +1,59 @@
-import { ReactNode } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import LoginForm from './LoginForm';
+import React, { useEffect, useState } from 'react';
+import { useSupabase } from './SupabaseProvider'; // Import useSupabase
+import Auth from './Auth'; // Assuming an Auth component for login/signup
 
-interface AuthGuardProps {
-  children: ReactNode;
-}
+const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { supabase } = useSupabase();
+  const [session, setSession] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function AuthGuard({ children }: AuthGuardProps) {
-  const { user, loading } = useAuth();
+  useEffect(() => {
+    if (!supabase) {
+      // Supabase client might not be ready yet, or there's an initialization error
+      console.warn('Supabase client not available in AuthGuard.');
+      setLoading(false); // Allow rendering Auth component if client is not ready
+      return;
+    }
+
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+      } catch (error) {
+        console.error('Error getting session:', error);
+        // This is where the "Failed to fetch" might originate if the initial session check fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getSession();
+
+    // Correctly destructure the subscription object
+    const { data: { subscription: authListenerSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => {
+      // Call unsubscribe on the subscription object
+      authListenerSubscription?.unsubscribe();
+    };
+  }, [supabase]); // Dependency on supabase ensures effect re-runs if client changes (though it should be stable)
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-slate-100">
+        <p className="text-lg text-slate-700">Loading authentication...</p>
       </div>
     );
   }
 
-  if (!user) {
-    return <LoginForm />;
+  if (!session) {
+    return <Auth />; // Render Auth component if no session
   }
 
   return <>{children}</>;
-}
+};
+
+export default AuthGuard;

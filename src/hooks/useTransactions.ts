@@ -40,25 +40,59 @@ export function useTransactions() {
     setLoading(false);
   };
 
+  const fetchTransactionById = async (id: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        transaction_items (
+          id,
+          product_id,
+          quantity,
+          unit_price,
+          total_price,
+          products (
+            name,
+            sku
+          )
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return { data: null, error };
+    }
+    setLoading(false);
+    return { data: data as Transaction, error: null };
+  };
+
   const createTransaction = async (
     items: { product_id: string; quantity: number; unit_price: number }[],
     paymentMethod: 'cash' | 'card',
-    userId?: string
+    totalAmount: number, // New parameter
+    vatAmount: number, // New parameter
+    discountAmount: number, // New parameter
+    priceExcludingVAT: number, // New parameter
+    userId?: string,
+    salespersonName?: string // New parameter for salesperson name
   ) => {
     setLoading(true);
     try {
-      const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
-      const taxAmount = subtotal * 0.1;
-      const totalAmount = subtotal + taxAmount;
-
       const { data: transactionData, error: transactionError } = await supabase
         .from('transactions')
         .insert({
           user_id: userId,
           total_amount: totalAmount,
-          tax_amount: taxAmount,
+          tax_amount: vatAmount, // Store VAT as tax_amount
+          discount_amount: discountAmount, // New column for discount
+          price_excluding_vat: priceExcludingVAT, // New column for price excluding VAT
           payment_method: paymentMethod,
           status: 'completed',
+          salesperson_name: salespersonName, // Store salesperson name
         })
         .select()
         .single();
@@ -82,7 +116,6 @@ export function useTransactions() {
 
       if (itemsError) {
         setError(itemsError.message);
-        // Potentially roll back the transaction if this were a real transaction block
         return { error: itemsError };
       }
 
@@ -92,7 +125,6 @@ export function useTransactions() {
           .rpc('decrement_product_stock', { p_product_id: item.product_id, p_quantity: item.quantity });
         if (stockError) {
           console.error('Failed to decrement stock:', stockError);
-          // Handle stock update failure, potentially refund or alert
         }
       }
 
@@ -106,5 +138,5 @@ export function useTransactions() {
     }
   };
 
-  return { transactions, loading, error, fetchTransactions, createTransaction };
+  return { transactions, loading, error, fetchTransactions, fetchTransactionById, createTransaction };
 }
